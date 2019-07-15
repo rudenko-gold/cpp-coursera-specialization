@@ -1,71 +1,114 @@
-#include <array>
-#include <exception>
-#include <system_error>
+#pragma once
+
+#include <sstream>
 #include <stdexcept>
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
-template <typename T, size_t capacity>
-class StackVector {
+using namespace std;
+
+template <class T>
+ostream& operator << (ostream& os, const vector<T>& s) {
+    os << "{";
+    bool first = true;
+    for (const auto& x : s) {
+        if (!first) {
+            os << ", ";
+        }
+        first = false;
+        os << x;
+    }
+    return os << "}";
+}
+
+template <class T>
+ostream& operator << (ostream& os, const set<T>& s) {
+    os << "{";
+    bool first = true;
+    for (const auto& x : s) {
+        if (!first) {
+            os << ", ";
+        }
+        first = false;
+        os << x;
+    }
+    return os << "}";
+}
+
+template <class K, class V>
+ostream& operator << (ostream& os, const map<K, V>& m) {
+    os << "{";
+    bool first = true;
+    for (const auto& kv : m) {
+        if (!first) {
+            os << ", ";
+        }
+        first = false;
+        os << kv.first << ": " << kv.second;
+    }
+    return os << "}";
+}
+
+template<class T, class U>
+void AssertEqual(const T& t, const U& u, const string& hint = {}) {
+    if (!(t == u)) {
+        ostringstream os;
+        os << "Assertion failed: " << t << " != " << u;
+        if (!hint.empty()) {
+            os << " hint: " << hint;
+        }
+        throw runtime_error(os.str());
+    }
+}
+
+inline void Assert(bool b, const string& hint) {
+    AssertEqual(b, true, hint);
+}
+
+class TestRunner {
 public:
-    explicit StackVector(size_t a_size = 0) {
-        if (a_size > capacity) {
-            throw std::invalid_argument("");
-        } else {
-            data_size = a_size;
+    template <class TestFunc>
+    void RunTest(TestFunc func, const string& test_name) {
+        try {
+            func();
+            cerr << test_name << " OK" << endl;
+        } catch (exception& e) {
+            ++fail_count;
+            cerr << test_name << " fail: " << e.what() << endl;
+        } catch (...) {
+            ++fail_count;
+            cerr << "Unknown exception caught" << endl;
         }
     }
 
-    T& operator[](size_t index) {
-        return data[index];
-    }
-
-    const T& operator[](size_t index) const {
-        return data[index];
-    }
-
-    auto begin() {
-        return data.begin();
-    }
-
-    auto end() {
-        return data.begin() + data_size;
-    }
-
-    auto begin() const {
-        return data.begin();
-    }
-
-    auto end() const {
-        return data.begin() + data_size;
-    }
-
-    size_t Size() const {
-        return data_size;
-    }
-
-    size_t Capacity() const {
-        return data.size();
-    }
-
-    void PushBack(const T& value) {
-        if (data_size < capacity) {
-            data[data_size] = value;
-            data_size++;
-        } else {
-            throw std::overflow_error("");
+    ~TestRunner() {
+        if (fail_count > 0) {
+            cerr << fail_count << " unit tests failed. Terminate" << endl;
+            exit(1);
         }
     }
 
-    T PopBack() {
-        if (data_size <= 0) {
-            throw std::underflow_error("");
-        } else {
-            T ret = data[data_size - 1];
-            data_size--;
-            return ret;
-        }
-    }
-
-    size_t data_size;
-
-    std::array<T, capacity> data;
+private:
+    int fail_count = 0;
 };
+
+#define ASSERT_EQUAL(x, y) {            \
+  ostringstream os;                     \
+  os << #x << " != " << #y << ", "      \
+    << __FILE__ << ":" << __LINE__;     \
+  AssertEqual(x, y, os.str());          \
+}
+
+#define ASSERT(x) {                     \
+  ostringstream os;                     \
+  os << #x << " is false, "             \
+    << __FILE__ << ":" << __LINE__;     \
+  Assert(x, os.str());                  \
+}
+
+#define RUN_TEST(tr, func) \
+  tr.RunTest(func, #func)
+
