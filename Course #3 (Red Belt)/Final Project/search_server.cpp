@@ -42,78 +42,64 @@ SearchServer::SearchServer(istream& document_input) {
 }
 
 void SearchServer::UpdateDocumentBase(istream& document_input) {
-    if (index.GetAccess().ref_to_value.size() > 0) {
-        return;
-    }
-
-    future<InvertedIndex> f = async([&document_input]() {
+    future<void> f = async([&document_input, this]() {
         InvertedIndex new_index;
         string current_document;
         while (getline(document_input, current_document)) {
             new_index.Add(move(current_document));
         }
-        return new_index;
-    });
 
-    // Get Access to index reference
-    index.GetAccess().ref_to_value = move(f.get());
-    // Unlock index
+        // Get Access to index reference
+        index.GetAccess().ref_to_value = move(new_index);
+        // Unlock index
+    });
 }
 
 void SearchServer::AddQueriesStream(
-    istream& query_input, ostream& search_results_output
+        istream& query_input, ostream& search_results_output
 ) {
-    const size_t MAX_DOCS_COUNT = 50000;
-    vector<pair<size_t, size_t>> docid_count(MAX_DOCS_COUNT, {0, 0});
+    future<void> f = async([&query_input, this, &search_results_output]() {
+        for (string current_query; getline(query_input, current_query); ) {
+            InvertedIndex& index_ref = index.GetAccess().ref_to_value;
+            const auto words = SplitIntoWords(current_query);
 
-    vector<string> queries;
-    for (string current_query; getline(query_input, current_query); ) {
-        queries.push_back(current_query);
-    }
-    
-    const size_t THREAD_COUNT = 4;
-    const size_t PAGE_SIZE = (queries.size() % THREAD_COUNT == 0) ? (queries.size() / THREAD_COUNT) : (queries.size() / THREAD_COUNT + 1);
-    
-    
-    
-    for (string current_query; getline(query_input, current_query); ) {
-        InvertedIndex& index_ref = index.GetAccess().ref_to_value;
-        const auto words = SplitIntoWords(current_query);
+            vector<pair<size_t, size_t>> docid_count(index.GetAccess().ref_to_value.size(), {0, 0});
 
-        for (size_t i = 0; i < docid_count.size(); ++i) {
-            docid_count[i].first = i;
-            docid_count[i].second = 0;
-        }
-
-        for (const auto& word : words) {
-            for (const pair<size_t, size_t>& docid : index_ref.Lookup(word)) {
-                docid_count[docid.first].second += docid.second;
+            for (size_t i = 0; i < docid_count.size(); ++i) {
+                docid_count[i].first = i;
+                docid_count[i].second = 0;
             }
-        }
 
-        partial_sort(
-                begin(docid_count),
-                begin(docid_count) + 5,
-                end(docid_count),
-                [](pair<size_t, size_t>& lhs, pair<size_t, size_t>& rhs) {
-                    int64_t lhs_docid = lhs.first;
-                    auto lhs_hit_count = lhs.second;
-                    int64_t rhs_docid = rhs.first;
-                    auto rhs_hit_count = rhs.second;
-                    return make_pair(lhs_hit_count, -lhs_docid) > make_pair(rhs_hit_count, -rhs_docid);
+            for (const auto& word : words) {
+                for (const pair<size_t, size_t>& docid : index_ref.Lookup(word)) {
+                    docid_count[docid.first].second += docid.second;
                 }
-        );
-
-        search_results_output << current_query << ':';
-        for (auto [docid, hitcount] : Head(docid_count, 5)) {
-            if (hitcount == 0) {
-                break;
             }
 
-            search_results_output << " {"
-                                  << "docid: " << docid << ", "
-                                  << "hitcount: " << hitcount << '}';
+            partial_sort(
+                    begin(docid_count),
+                    Head(docid_count, 5).end(),
+                    end(docid_count),
+                    [](pair<size_t, size_t>& lhs, pair<size_t, size_t>& rhs) {
+                        int64_t lhs_docid = lhs.first;
+                        auto lhs_hit_count = lhs.second;
+                        int64_t rhs_docid = rhs.first;
+                        auto rhs_hit_count = rhs.second;
+                        return make_pair(lhs_hit_count, -lhs_docid) > make_pair(rhs_hit_count, -rhs_docid);
+                    }
+            );
+
+            search_results_output << current_query << ':';
+            for (auto [docid, hitcount] : Head(docid_count, 5)) {
+                if (hitcount == 0) {
+                    break;
+                }
+
+                search_results_output << " {"
+                                      << "docid: " << docid << ", "
+                                      << "hitcount: " << hitcount << '}';
+            }
+            search_results_output << endl;
         }
-        search_results_output << endl;
-    }
+    });
 }
