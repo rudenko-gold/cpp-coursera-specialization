@@ -145,8 +145,92 @@ using namespace geo2d;
     ASSERT(!Collide(*new_defense_tower, *game_map[6]));
 }
 
+void TestVectorProduct() {
+  using geo2d::Vector;
+  ASSERT_EQUAL((Vector{1, 0} * Vector{2, 0}), 0);
+  ASSERT_EQUAL((Vector{1, 0} * Vector{-1, 0}), 0);
+  ASSERT((Vector{1, 0} * Vector{1, 1} > 0));
+  ASSERT((Vector{1, 1} * Vector{1, 0} < 0));
+  ASSERT((Vector{1, 0} * Vector{-1, 1} > 0));
+}
+
+void TestPointSegmentCollide() {
+  using geo2d::Point;
+  using geo2d::Segment;
+
+  ASSERT(geo2d::Collide(Point{1, 0}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(geo2d::Collide(Point{0, 0}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(geo2d::Collide(Point{10, 0}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(geo2d::Collide(Point{3, 3}, Segment{{0, 0}, {10, 10}}));
+
+  ASSERT(!geo2d::Collide(Point{-1, 0}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(!geo2d::Collide(Point{11, 0}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(!geo2d::Collide(Point{1, 1}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(!geo2d::Collide(Point{5, 5}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(!geo2d::Collide(Point{-5, 0}, Segment{{0, 0}, {10, 0}}));
+  ASSERT(!geo2d::Collide(Point{5, -1}, Segment{{0, 0}, {10, 0}}));
+}
+
+void TestPointRectangleCollide() {
+  using geo2d::Point;
+  using geo2d::Rectangle;
+
+  const Rectangle r{{0, 0}, {5, 3}};
+  ASSERT(geo2d::Collide(Point{0, 0}, r));
+  ASSERT(geo2d::Collide(Point{5, 0}, r));
+  ASSERT(geo2d::Collide(Point{5, 3}, r));
+  ASSERT(geo2d::Collide(Point{0, 3}, r));
+  ASSERT(geo2d::Collide(Point{2, 2}, r));
+  ASSERT(geo2d::Collide(Point{1, 3}, r));
+
+  ASSERT(!geo2d::Collide(Point{-1, 0}, r));
+  ASSERT(!geo2d::Collide(Point{0, -1}, r));
+  ASSERT(!geo2d::Collide(Point{0, 4}, r));
+  ASSERT(!geo2d::Collide(Point{6, 0}, r));
+  ASSERT(!geo2d::Collide(Point{5, 4}, r));
+  ASSERT(!geo2d::Collide(Point{6, 3}, r));
+  ASSERT(!geo2d::Collide(Point{2, 8}, r));
+}
+
+void TestSegmentSegmentCollide() {
+  using geo2d::Segment;
+  ASSERT(geo2d::Collide(Segment{{0, 0}, {2, 2}}, Segment{{2, 0}, {0, 2}}));
+  ASSERT(geo2d::Collide(Segment{{0, 0}, {2, 2}}, Segment{{2, 0}, {1, 1}}));
+  ASSERT(geo2d::Collide(Segment{{0, 0}, {10, 6}}, Segment{{5, 3}, {15, 9}}));
+  ASSERT(geo2d::Collide(Segment{{0, 0}, {6, 2}}, Segment{{4, 2}, {6, 0}}));
+  ASSERT(geo2d::Collide(Segment{{0, 0}, {6, 2}}, Segment{{6, 2}, {6, 3}}));
+
+  ASSERT(!geo2d::Collide(Segment{{0, 0}, {2, 2}}, Segment{{2, 0}, {1, 0}}));
+  ASSERT(!geo2d::Collide(Segment{{0, 0}, {10, 6}}, Segment{{5, 4}, {15, 10}}));
+  ASSERT(!geo2d::Collide(Segment{{0, 0}, {6, 2}}, Segment{{4, 1}, {6, 0}}));
+}
+
+void TestSegmentCircleCollide() {
+  using geo2d::Circle;
+  using geo2d::Segment;
+  const Circle c{{0, 0}, 4};
+
+  ASSERT(geo2d::Collide(c, Segment{{0, 0}, {1, 0}}));
+  ASSERT(geo2d::Collide(c, Segment{{3, 1}, {10, 1}}));
+  ASSERT(geo2d::Collide(c, Segment{{-5, 2}, {5, 2}}));
+  ASSERT(geo2d::Collide(c, Segment{{-5, 3}, {5, 3}}));
+  ASSERT(geo2d::Collide(c, Segment{{-5, 4}, {5, 4}}));
+  ASSERT(geo2d::Collide(c, Segment{{3, 1}, {4, 5}}));
+  ASSERT(geo2d::Collide(c, Segment{{5, 0}, {-2, 4}}));
+
+  ASSERT(!geo2d::Collide(c, Segment{{4, 1}, {4, 5}}));
+  ASSERT(!geo2d::Collide(c, Segment{{-5, 5}, {5, 5}}));
+  ASSERT(!geo2d::Collide(c, Segment{{4, 4}, {5, 4}}));
+  ASSERT(!geo2d::Collide(Circle{{10, 7}, 1}, Segment{{7, 3}, {9, 8}}));
+}
+
 int main() {
-    TestRunner tr;
-    RUN_TEST(tr, TestAddingNewObjectOnMap);
-    return 0;
+  TestRunner tr;
+  RUN_TEST(tr, TestAddingNewObjectOnMap);
+  RUN_TEST(tr, TestVectorProduct);
+  RUN_TEST(tr, TestPointSegmentCollide);
+  RUN_TEST(tr, TestPointRectangleCollide);
+  RUN_TEST(tr, TestSegmentSegmentCollide);
+  RUN_TEST(tr, TestSegmentCircleCollide);
+  return 0;
 }
