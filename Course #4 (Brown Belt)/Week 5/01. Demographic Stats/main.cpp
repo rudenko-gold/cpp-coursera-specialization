@@ -39,22 +39,22 @@ int ComputeMedianAge(vector<Person>& persons, Pred pred) {
 
 void PrintStats(vector<Person> persons) {
     cout << "Median age = " << ComputeMedianAge(persons.begin(), persons.end()) << endl;
-    cout << "Medin age for females = " << ComputeMedianAge(persons, [](const Person& person) {
+    cout << "Median age for females = " << ComputeMedianAge(persons, [](const Person& person) {
         return person.gender == Gender::FEMALE;
     }) << endl;
-    cout << "Medin age for males = " << ComputeMedianAge(persons, [](const Person& person) {
+    cout << "Median age for males = " << ComputeMedianAge(persons, [](const Person& person) {
         return person.gender == Gender::MALE;
     }) << endl;
-    cout << "Medin age for employed females = " << ComputeMedianAge(persons, [](const Person& person) {
+    cout << "Median age for employed females = " << ComputeMedianAge(persons, [](const Person& person) {
         return person.gender == Gender::FEMALE && person.is_employed;
     }) << endl;
-    cout << "Medin age for unemployed females = " << ComputeMedianAge(persons, [](const Person& person) {
+    cout << "Median age for unemployed females = " << ComputeMedianAge(persons, [](const Person& person) {
         return person.gender == Gender::FEMALE && !person.is_employed;
     }) << endl;
-    cout << "Medin age for employed males = " << ComputeMedianAge(persons, [](const Person& person) {
+    cout << "Median age for employed males = " << ComputeMedianAge(persons, [](const Person& person) {
         return person.gender == Gender::MALE && person.is_employed;
     }) << endl;
-    cout << "Medin age for unemployed males = " << ComputeMedianAge(persons, [](const Person& person) {
+    cout << "Median age for unemployed males = " << ComputeMedianAge(persons, [](const Person& person) {
         return person.gender == Gender::MALE && !person.is_employed;
     }) << endl;
 
