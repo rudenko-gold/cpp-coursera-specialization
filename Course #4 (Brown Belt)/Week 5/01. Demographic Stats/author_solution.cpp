@@ -19,8 +19,6 @@ void PrintStats(vector<Person> persons) {
             return p.is_employed;
         }
     );
-
-    // Теперь интересующие нас группы находятся в векторе непрерывно
     cout << "Median age = "
          << ComputeMedianAge(begin(persons), end(persons))          << endl;
     cout << "Median age for females = "
