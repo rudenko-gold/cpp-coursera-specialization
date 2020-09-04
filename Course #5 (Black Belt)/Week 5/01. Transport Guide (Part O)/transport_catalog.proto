@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package Serialized;
+
+message TransportCatalog {
+    repeated Bus bus = 1;
+    repeated Stop stop = 2;
+}
+
+message Stop {
+    string name = 1;
+    repeated int32 bus_idx = 3;
+}
+
+message Bus {
+    string name = 1;
+    bool is_roundtrip = 2;
+    uint32 stop_count = 3;
+    uint32 unique_stop_count = 4;
+    int32 road_route_length = 5;
+    double geo_route_length = 6;
+    int32 idx = 7;
+}
